@@ -5,20 +5,41 @@
 // Login   <aroy@epitech.net>
 // 
 // Started on  Sat Jun 21 15:15:39 2014 Antoine ROY
-// Last update Tue Aug 12 21:20:43 2014 Antoine ROY
+// Last update Fri Nov  7 13:57:53 2014 adrien perez
 //
 
 #include "GameEngine.hh"
 
-Arbitre::Arbitre(std::vector<Case > &cases, int rules1, int rules2)
+Arbitre::Arbitre(std::vector<Case > &cases, Player *_p1, Player *_p2)
 {
   cp_cases = &cases;
-  rules_taked = rules1;
-  rules_five_b = rules2;
+  x_to = 0;
+  y_to = 0;
+  p1 = _p1;
+  p2 = _p2;
 }
 
 Arbitre::~Arbitre()
 {}
+
+void	Arbitre::setRules(bool r1, bool r2, bool r3)
+{
+  rules_taked = r1;
+  rules_five_b = r2;
+  rules_double_three = r3;
+}
+
+bool	Arbitre::rechange_color()
+{
+  std::vector<Case >::iterator it = cp_cases->begin();
+  if (GameEngine::Instance().getRulesPions() == true)
+    GameEngine::Instance().add_pion_possible(x_to, y_to);
+  
+  (*(it + (x_to + (y_to * 19)))).setSprite(GameEngine::Instance().getCenterEmpty(), "empty");
+  p1->setTurn((p1->getTurn() == true ? false : true));
+  p2->setTurn((p2->getTurn() == true ? false : true));
+  return false;
+}
 
 bool	Arbitre::rules(Player *player, int x, int y)
 {
@@ -26,23 +47,280 @@ bool	Arbitre::rules(Player *player, int x, int y)
 
   x_to = x / 50;
   y_to = y / 50;
-  //std::cout << "Player put pion on x : " << x_to << " y : " << y_to << " -> player color is : " << player->getColor() << std::endl;
 
-  if (rules_taked == 1)
+  if (rules_double_three && double_three(x_to, y_to) == false)
+    return rechange_color();
+
+  if (rules_taked)
     {
       this->take_two_pions(player);
       if (player->getTaked() >= 10)
 	return (true);
     }
 
-  //std::cout << "Player : " << (player->getColor() == 1 ? "white" : "black") << " have : " << player->getTaked() << std::endl;
-
-
   if (this->five_concecutif(player) == 2)
     return (true);
   return (false);
 }
 
+bool	Arbitre::double_three(int _x, int _y)
+{
+  std::string			usedColor;
+  std::string			currentColor = "";   
+  std::vector<Case>::iterator	it;
+  std::vector<Case>::iterator	it_check;
+  int				count;
+  int				countAdversaire;
+  int				nbThreeFree = 0;
+  
+  x_to = _x;
+  y_to = _y;
+  std::cout << "x_to : " << x_to << " et y_to : "<<y_to<<std::endl;
+  it = cp_cases->begin() + (x_to + (y_to * 19));
+
+  currentColor = (*it).getColor();
+  usedColor = currentColor;
+
+  it = cp_cases->begin();
+
+  // horizontal
+
+  for (int y = 0; y < 19; y++) { 
+    for (int x = 0; x < 19 && it <= cp_cases->end(); x++) {
+  	if ((*it).getColor() == usedColor) {
+  	  countAdversaire = 0;
+  	  count = 0;
+
+  	  it_check = cp_cases->begin() + (x + (y * 19) - 1);	  
+  	  if (x == 0 || (it_check <= cp_cases->end() && (*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+  	    countAdversaire++;
+	    
+  	  it_check = cp_cases->begin() + (x + (y * 19) + 4);
+	  if (it_check < cp_cases->end()) { 
+	    if (x + 3 >= 19 || x + 4 >= 19 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	      countAdversaire++;
+	  } else {
+	    countAdversaire++;
+	  }
+	  
+  	  it_check = cp_cases->begin() + (x + (y * 19));
+  	  for (int i = 0; i <= 4 && it_check < cp_cases->end(); i++) {
+  	    if ((*it_check).getColor() == usedColor)
+  	      count++;
+  	    else if ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty")
+  	      countAdversaire++;
+  	    it_check++;
+  	  }
+  	  if (count == 3 && countAdversaire == 0)
+  	    nbThreeFree++;
+  	}
+  	it++;
+      }
+  }
+
+  // vertical
+
+  it = cp_cases->begin();
+
+  for (int x = 0; x < 19; x++) { 
+    for (int y = 0; y < 19; y++) {
+      it = cp_cases->begin() + (x + (y * 19));
+      if ((*it).getColor() == usedColor) {
+	countAdversaire = 0;
+	count = 0;
+
+	it_check = cp_cases->begin() + (x + (y * 18));	  
+	if (y == 0 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	    
+	it_check = cp_cases->begin() + (x + (y * 23));	  
+	if (y + 3 >= 19 || y + 4 >= 19 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+
+	it_check = cp_cases->begin() + (x + (y * 19));
+	for (int i = 0; i <= 4 && it_check < cp_cases->end(); i++) {
+	  if ((*it_check).getColor() == usedColor)
+	    count++;
+	  else if ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty")
+	    countAdversaire++;
+	  it_check += 19;
+	}
+	if (count == 3 && countAdversaire == 0)
+	  nbThreeFree++;
+      }
+    }
+  }
+
+  // diagonale-droite
+
+  int	x;
+  int	y_loop_check;
+  int	x_loop_check;
+  it = cp_cases->begin();
+
+  for (int y = 4; y < 19; y++) {
+    x = 0;
+    for (int y_tmp = y; y_tmp >= 0; y_tmp--) {
+      it = cp_cases->begin() + (x + (y_tmp * 19)); 
+      if ((*it).getColor() == usedColor) {
+	countAdversaire = 0;
+	count = 0;
+	
+	x_loop_check = x;
+	y_loop_check = y_tmp;
+
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) + 18);	  
+	if (((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) - 18);	  
+	if (y_loop_check == 0)
+	  countAdversaire++;
+	else if (y_loop_check - 3 >= 0 || y_loop_check - 4 >= 0 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+
+	for (int i = 0; i <= 4 && y_loop_check >= 0; i++) {
+	  it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19)); 
+	  if ((*it_check).getColor() == usedColor)
+	    count++;
+	  else if ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty")
+	    countAdversaire++;	  
+	  x_loop_check++;
+	  y_loop_check--;
+	}
+	if (count == 3 && countAdversaire == 0)
+	  nbThreeFree++;
+      }
+      x++;
+    }
+  }
+
+  int	y;
+
+  for (int x = 14; x >= 0; x--) {
+    y = 0;
+    for (int x_tmp = x; x_tmp < 19; x_tmp++) {
+      it = cp_cases->begin() + (x_tmp + (y * 19)); 
+
+      if ((*it).getColor() == usedColor) {
+	countAdversaire = 0;
+	count = 0;
+
+	x_loop_check = x_tmp;
+	y_loop_check = y;
+
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) + 18);	  
+	if (y_loop_check == 18 || x_loop_check == 0 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) - 18);	  
+	if (y == 0 || y_loop_check + 3 >= 19 || y_loop_check + 4 >= 19 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	
+	for (int i = 0; i <= 4 && y_loop_check < 19; i++) {
+	  it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19)); 
+	  if ((*it_check).getColor() == usedColor)
+	    count++;
+	  else if ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty")
+	    countAdversaire++;	  
+	  x_loop_check--;
+	  y_loop_check++;
+	}
+	if (count == 3 && countAdversaire == 0)
+	  nbThreeFree++;
+      }
+      y++;
+    }
+  }
+
+  // diagonale-gauche
+
+  for (int x = 14; x >= 0; x--) {
+    y = 0;
+    for (int x_tmp = x; x_tmp < 19; x_tmp++) {
+      it = cp_cases->begin() + (x_tmp + (y * 19)); 
+
+      if ((*it).getColor() == usedColor) {
+	countAdversaire = 0;
+	count = 0;
+
+	x_loop_check = x_tmp;
+	y_loop_check = y;
+
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) - 20);	  
+	if (y_loop_check == 0)
+	  countAdversaire++;
+	else if (((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) + 20);	  
+	if (x_loop_check + 3 >= 19 || x_loop_check + 4 >= 19 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	
+	for (int i = 0; i <= 4 && y_loop_check < 19 && x_loop_check < 19; i++) {
+	  it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19)); 
+	  if ((*it_check).getColor() == usedColor)
+	    count++;
+	  else if ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty")
+	    countAdversaire++;	  
+	  x_loop_check++;
+	  y_loop_check++;
+	}
+	if (count == 3 && countAdversaire == 0)
+	  nbThreeFree++;
+      }
+      y++;
+    }
+  }
+
+  for (int y = 14; y >= 0; y--) {
+    x = 0;
+    for (int y_tmp = y; y_tmp < 19; y_tmp++) {
+      it = cp_cases->begin() + (x + (y_tmp * 19)); 
+
+      if ((*it).getColor() == usedColor) {
+	countAdversaire = 0;
+	count = 0;
+
+	x_loop_check = x;
+	y_loop_check = y_tmp;
+
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) - 20);	  
+	if (x_loop_check == 0)
+	  countAdversaire++;
+	else if (((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;
+	
+	it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19) + 20);	  
+	
+	if (y_loop_check == 18)
+	  countAdversaire++;
+	else if (y_loop_check + 3 >= 19 || y_loop_check + 4 >= 19 || ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty"))
+	  countAdversaire++;		
+	
+	for (int i = 0; i <= 4 && y_loop_check < 19; i++) {
+	  it_check = cp_cases->begin() + (x_loop_check + (y_loop_check * 19)); 
+	  if ((*it_check).getColor() == usedColor)
+	    count++;
+	  else if ((*it_check).getColor() != usedColor && (*it_check).getColor() != "empty")
+	    countAdversaire++;	  
+	  x_loop_check++;
+	  y_loop_check++;
+	}
+	if (count == 3 && countAdversaire == 0)
+	  nbThreeFree++;
+      }
+      x++;
+    }
+  }
+
+  if (nbThreeFree >= 2) {
+    std::cout << "Double-three rule" << std::endl;
+    return false;
+  } else
+    return true;
+}
+  
 bool	Arbitre::check_breakable_all(std::string const& color, std::string const& color_inv, int nbr, int inc, int dif)
 {
   int   nb = 0;
@@ -50,26 +328,44 @@ bool	Arbitre::check_breakable_all(std::string const& color, std::string const& c
 
   while ((*(it - nb)).getColor() == color)
     {
-      if (y_to - 2 >= 0 && (*(it - nb - dif)).getColor() == color && (*(it - nb - (dif * 2))).getColor() == color_inv && (*(it - nb + dif)).getColor() == "empty")
+      if ((y_to - 2 >= 0 && (*(it - nb - dif)).getColor() == color) &&
+	  (*(it - nb - (dif * 2))).getColor() == color_inv &&
+	  (*(it - nb + dif)).getColor() == "empty")
         return true;                                                                                                                                                             
-      if (y_to + 2 < 19 && (*(it - nb + dif)).getColor() == color && (*(it - nb + (dif * 2))).getColor() == color_inv && (*(it - nb - dif)).getColor() == "empty")
+      if ((y_to + 2 < 19 && (*(it - nb + dif)).getColor() == color) &&
+	  (*(it - nb + (dif * 2))).getColor() == color_inv &&
+	  (*(it - nb - dif)).getColor() == "empty")
         return true;
-      if ((y_to - 1 >= 0 && (*(it - nb - dif)).getColor() == color_inv) && (y_to + 1 < 19 && (*(it - nb + dif)).getColor() == color) && (*(it - nb + (dif * 2))).getColor() == "empty")
+
+      if ((y_to - 1 >= 0 && (*(it - nb - dif)).getColor() == color_inv) &&
+	  (y_to + 1 < 19 && (*(it - nb + dif)).getColor() == color) &&
+	  (*(it - nb + (dif * 2))).getColor() == "empty")
         return true;
-      if ((y_to - 1 >= 0 && (*(it - nb - dif)).getColor() == color) && (y_to + 1 < 19 && (*(it - nb + dif)).getColor() == color_inv) && (*(it - nb - (dif * 2))).getColor() == "empty")
+
+      if ((y_to - 1 >= 0 && (*(it - nb - dif)).getColor() == color) &&
+	  (y_to + 1 < 19 && (*(it - nb + dif)).getColor() == color_inv) &&
+	  (*(it - nb - (dif * 2))).getColor() == "empty")
         return true;
       nb += inc;
     }
+
   nb = 0;
-  while (nb < nbr && (*(it + nb)).getColor() == color)
+  while (nb <= nbr && (*(it + nb)).getColor() == color)
     {
-      if (y_to - 2 >= 0 && (*(it + nb - dif)).getColor() == color && (*(it + nb - (dif * 2))).getColor() == color_inv && (*(it + nb + dif)).getColor() == "empty")
+      if ((y_to - 2 >= 0 && (*(it + nb - dif)).getColor() == color) &&
+	  (*(it + nb - (dif * 2))).getColor() == color_inv && (*(it + nb + dif)).getColor() == "empty")
         return true;
-      if (y_to + 2 < 19 && (*(it + nb + dif)).getColor() == color && (*(it + nb + (dif * 2))).getColor() == color_inv && (*(it + nb - dif)).getColor() == "empty")
+
+      if ((y_to + 2 < 19 && (*(it + nb + dif)).getColor() == color) &&
+	  (*(it + nb + (dif * 2))).getColor() == color_inv && (*(it + nb - dif)).getColor() == "empty")
         return true;
-      if ((y_to - 1 >= 0 && (*(it + nb - dif)).getColor() == color_inv) && (y_to + 1 < 19 && (*(it + nb + dif)).getColor() == color) && (*(it + nb + (dif * 2))).getColor() == "empty")
+      
+      if ((y_to - 1 >= 0 && (*(it + nb - dif)).getColor() == color_inv) &&
+	  (y_to + 1 < 19 && (*(it + nb + dif)).getColor() == color) && (*(it + nb + (dif * 2))).getColor() == "empty")
         return true;
-      if ((y_to - 1 < 19 && (*(it + nb - dif)).getColor() == color) && (y_to + 1 < 19 && (*(it + nb + dif)).getColor() == color_inv) && (*(it + nb - (dif * 2))).getColor() == "empty")
+
+      if ((y_to - 1 < 19 && (*(it + nb - dif)).getColor() == color) &&
+	  (y_to + 1 < 19 && (*(it + nb + dif)).getColor() == color_inv) && (*(it + nb - (dif * 2))).getColor() == "empty")
         return true;
       nb += inc;
     }
@@ -88,36 +384,32 @@ bool	Arbitre::five_breakable(std::string color, int direc, int nbr)
     color_inv = "nothing";
   
   if (direc == 0) //horizontal
-    {
-      if (check_breakable_all(color, color_inv, nbr, 1, 19) == true || check_breakable_all(color, color_inv, nbr, 1, 20) == true || check_breakable_all(color, color_inv, nbr, 1, 18) == true)
-	return true;
-    }
+    return (check_breakable_all(color, color_inv, nbr, 1, 19) ||
+	    check_breakable_all(color, color_inv, nbr, 1, 20) ||
+	    check_breakable_all(color, color_inv, nbr, 1, 18));
   else if (direc == 1) //vertical
-    {
-      if (check_breakable_all(color, color_inv, nbr, 19, 1) == true || check_breakable_all(color, color_inv, nbr, 19, 20) == true || check_breakable_all(color, color_inv, nbr, 19, 18) == true)
-	return true;
-    }
+    return (check_breakable_all(color, color_inv, nbr, 19, 1) ||
+	    check_breakable_all(color, color_inv, nbr, 19, 20) ||
+	    check_breakable_all(color, color_inv, nbr, 19, 18));
   else if (direc == 2) //diagonale haut gauche -> bas droite
-    {
-      if (check_breakable_all(color, color_inv, nbr, 20, 1) == true || check_breakable_all(color, color_inv, nbr, 20, 19) == true || check_breakable_all(color, color_inv, nbr, 20, 18) == true)
-	return true;
-    }
+    return (check_breakable_all(color, color_inv, nbr, 20, 1) ||
+	    check_breakable_all(color, color_inv, nbr, 20, 19) ||
+	    check_breakable_all(color, color_inv, nbr, 20, 18));
   else if (direc == 3) //diagonale bas gauche -> haut droite
-    {
-      if (check_breakable_all(color, color_inv, nbr, 18, 1) == true || check_breakable_all(color, color_inv, nbr, 18, 19) == true || check_breakable_all(color, color_inv, nbr, 18, 20) == true)
-	return true;
-    }
-  return false;
+    return (check_breakable_all(color, color_inv, nbr, 18, 1) ||
+	    check_breakable_all(color, color_inv, nbr, 18, 19) ||
+	    check_breakable_all(color, color_inv, nbr, 18, 20));
+  return (false);
 }
 
 bool	Arbitre::getRulesFive()
 {
-  return rules_five_b;
+  return (rules_five_b);
 }
 
 bool	Arbitre::getRulesTaked()
 {
-  return rules_taked;
+  return (rules_taked);
 }
 
 int	Arbitre::five_concecutif(Player *p)
@@ -132,7 +424,6 @@ int	Arbitre::five_concecutif(Player *p)
   std::vector<Case >::iterator it = cp_cases->begin() + (x_to + (y_to * 19));
   std::string	color_p = (*it).getColor();
 
-
   //checking_gauche
   while (x_to - nb >= 0 && (*(it - nb++)).getColor() == color_p)
     s_h++;
@@ -142,10 +433,8 @@ int	Arbitre::five_concecutif(Player *p)
   while (x_to + nb < 19 && (*(it + nb++)).getColor() == color_p)
     s_h++;
 
-
-  if (s_h >= 5 && (rules_five_b == 0 || five_breakable(color_p, 0, nb) == false))
+  if (s_h >= 5 && (!rules_five_b || (!rules_taked ? true : !five_breakable(color_p, 0, nb))))
     return 2;
-
 
   nb = 1;
   //checking_haut
@@ -157,10 +446,8 @@ int	Arbitre::five_concecutif(Player *p)
   while (y_to + nb < 19 && (*(it + (19 * nb++))).getColor() == color_p)
     s_v++;
 
-
-  if (s_v >= 5 && (rules_five_b == 0 || five_breakable(color_p, 1, nb) == false))
+  if (s_v >= 5 && (!rules_five_b || (!rules_taked ? true : !five_breakable(color_p, 1, nb))))
     return 2;
-
 
   nb = 1;
   //checking_haut_gauche
@@ -172,10 +459,8 @@ int	Arbitre::five_concecutif(Player *p)
   while (y_to + nb < 19 && x_to + nb < 19 && (*(it + (20 * nb++))).getColor() == color_p)
     s_dhgd++;
 
-
-  if (s_dhgd >= 5 && (rules_five_b == 0 || five_breakable(color_p, 2, nb) == false))
+  if (s_dhgd >= 5 && (!rules_five_b || (!rules_taked ? true : !five_breakable(color_p, 2, nb))))
     return 2;
-  
 
   nb = 1;
   //checking_bas_gauche
@@ -187,8 +472,7 @@ int	Arbitre::five_concecutif(Player *p)
   while (y_to - nb >= 0 && x_to + nb < 19 && (*(it - (18 * nb++))).getColor() == color_p)
     s_dbgd++;
 
-
-  if (s_dbgd >= 5 && (rules_five_b == 0 || five_breakable(color_p, 3, nb) == false))
+  if (s_dbgd >= 5 && (!rules_five_b || (!rules_taked ? true : !five_breakable(color_p, 3, nb))))
     return 2;
 
   return 0;

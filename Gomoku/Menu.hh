@@ -5,7 +5,7 @@
 // Login   <aroy@epitech.net>
 // 
 // Started on  Thu Jul 10 00:39:31 2014 Antoine ROY
-// Last update Sun Oct 26 17:28:53 2014 etienne bondot
+// Last update Wed Nov  5 22:28:08 2014 etienne bondot
 //
 
 #ifndef	__MENU__
@@ -27,23 +27,51 @@ class Menu
 
   typedef	enum
     {
-      NORMAL,
-      IA,
-      ONLINE,
-      NB_GAME_TYPE = 3
-    }		eGameType;
-
-  typedef	enum
-    {
       GAME_TYPE,
       RULE_1,
       RULE_2,
       RULE_3,
       RULE_4,
+      DIFFICULTY,
       RUN,
-      NB_STEP = 5
+      NB_STEP = 7
     }		eStep;
 
+  typedef	enum
+    {
+      NO_FOCUS,
+      FOCUS
+    }		eFocus;
+
+  typedef	enum
+    {
+      GAME_TITLE,
+      FPS_DISPLAY,
+      ARROW_GAME_TYPE_LEFT,
+      ARROW_GAME_TYPE_RIGHT,
+      GAME_TYPE_NORMAL,
+      GAME_TYPE_IA,
+      GAME_TYPE_ONLINE,
+      OPTION_TITLE,
+      OPTION_FIVE_BREAKABLE,
+      OPTION_PAWN_TAKABLE,
+      OPTION_DOUBLE_THREE,
+      OPTION_PAWN_POSSIBLE,
+      LINE_1_OPTION,
+      LINE_2_OPTION,
+      LINE_3_OPTION,
+      LINE_4_OPTION,
+      PRESS_ENTER,
+      ARROW_DIFF_LEFT,
+      ARROW_DIFF_RIGHT,
+      DIFFICULTY_EASY,
+      DIFFICULTY_MEDIUM,
+      DIFFICULTY_HARD,
+      HOST,
+      PORT,
+      HOST_DISPLAY,
+      PORT_DISPLAY
+    }		eText;
 
 public:
   
@@ -59,59 +87,47 @@ private:
   sf::Vector2i			_screen_dim;
   sf::RenderWindow		_window;
   sf::Texture			_t_background;
+  sf::Texture			_t_white_square;
+  sf::Texture			_t_white_square_focus;
   sf::Sprite			_s_background;
+  sf::Sprite			_s_white_square_host;
+  sf::Sprite			_s_white_square_port;
+  sf::Sprite			_s_white_square_host_focus;
+  sf::Sprite			_s_white_square_port_focus;
   sf::Font			_font;
   sf::Font			_font_line;
-
-  sf::Text			_tx_title;
-  sf::Text			_tx_game_type_normal;
-  sf::Text			_tx_game_type_ia;
-  sf::Text			_tx_game_type_online;
-  sf::Text			_tx_fps;
-  sf::Text			_arrow_left;
-  sf::Text			_arrow_right;
-  sf::Text			_option_title;
-  sf::Text			_option_five_breakable;
-  sf::Text			_option_pawn_takable;
-  sf::Text			_option_double_three;
-  sf::Text			_option_pawn_possible;
-  sf::Text			_line_opt1;
-  sf::Text			_line_opt2;
-  sf::Text			_line_opt3;
-  sf::Text			_line_opt4;
-  sf::Text			_press_enter;
+  sf::Font			_font_host;
 
   std::map<eRule, bool>		_m_rules;
-  std::map<eGameType, sf::Text>	_m_game_type;
-  std::map<eStep, sf::Vector2f>	_m_coord_arrow_left;
-  std::map<eStep, sf::Vector2f>	_m_coord_arrow_right;
-  std::map<eStep, sf::Text *>	_m_text;
-  eGameType			_game_type;
+  std::map<eStep, sf::Text *>	_m_step;
+  std::map<eFocus, sf::Sprite>	_m_sprite_host;
+  std::map<eFocus, sf::Sprite>	_m_sprite_port;
+  std::map<eText, sf::Text>	_m_all_txt;
   eStep				_current_step;
+  eText				_game_type;
+  eText				_difficulty;
+  bool				_enter_host;
+  int				_focus;
 
 public:
 
-  void	changeGameType(int);
-  void	changeOption();
-  void	changeCurrentStep(int);
-  void	changeChoicePos();
+  sf::Text	initText(const sf::Font &, const std::string &, int, const sf::Color &, sf::Vector2f);
+  void		initSprites();
+  void		initAllText();
+  void		initRules();
+  void		changeGameType(int);
+  void		changeGameDifficulty(int);
+  void		changeOption();
+  void		changeCurrentStep(int);
+  void		changeChoicePos();
 
-  void	run();
-  void	draw();
-  void	updateArrows();
-  void	updateFPS();
-  void	initRules();
-  void	initTitle();
-  void	initGameTypes();
-  void	initFPSDisplay();
-  void	initArrowsText();
-  void	initCoordArrows();
-  void	initOptionsTitle();
-  void	initOptionsText();
-  void	initTextMap();
-  void	resetColor();
+  void		run();
+  void		draw();
+  void		updateFPS();
+  void		resetColor();
+  void		startGame();
 
-  void	displayInformations();
+  void		displayInformations();
 
 };
 

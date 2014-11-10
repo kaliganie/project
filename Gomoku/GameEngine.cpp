@@ -5,11 +5,11 @@
 // Login   <aroy@epitech.net>
 // 
 // Started on  Thu Jun 19 21:44:00 2014 Antoine ROY
-// Last update Tue Aug 12 22:24:17 2014 Antoine ROY
+// Last update Wed Nov  5 23:44:33 2014 etienne bondot
 //
 
 #include "GameEngine.hh"
-
+#include "Exception.hpp"
 
 using namespace sf;
 
@@ -19,21 +19,20 @@ GameEngine::GameEngine()
   std::ostringstream	oss;
 
   sock = -2;
-  online = 0;
   rules_pions = true;
-  ia = false;
   window.create(VideoMode(1000, 1025, 32), "Gomoku !");
-  font.loadFromFile("img/font_plateau.png");
+  if (!font.loadFromFile("img/font_plateau.png") ||
+      !center_empty.loadFromFile("img/center_empty.png") ||
+      !center_black.loadFromFile("img/center_black.png") ||
+      !center_white.loadFromFile("img/center_white.png") ||
+      !white_winner.loadFromFile("img/white_win.png") ||
+      !black_winner.loadFromFile("img/black_win.png") ||
+      !police.loadFromFile("arial.ttf"))
+    throw Exception::LoadFromFileException();
+
   s_font.setTexture(font);
   s_font.setPosition(0, 0);
-  center_empty.loadFromFile("img/center_empty.png");
-  center_black.loadFromFile("img/center_black.png");
-  center_white.loadFromFile("img/center_white.png");
-  white_winner.loadFromFile("img/white_win.png");
-  black_winner.loadFromFile("img/black_win.png");
-
-  police.loadFromFile("arial.ttf");
-
+  
   oss << "you have : 0 pawn";
   have_you = new Text(oss.str(), police, 15);
   have_you->setPosition(843.0, 5.0);
@@ -59,11 +58,10 @@ GameEngine::GameEngine()
       x++;
     }
 
-  possible.push_back(std::make_pair(9, 9));
+  possible.push_back(std::make_pair(9, 9));  
 
   p1 = NULL;
   you = NULL;
-  arbitre = new Arbitre(cases);
 }
 
 GameEngine::~GameEngine()
@@ -82,15 +80,6 @@ GameEngine::~GameEngine()
 Arbitre	*GameEngine::getArbitre()
 {
   return arbitre;
-}
-
-void	GameEngine::Save_port_addr(int _online, std::string const& _port, std::string const& _addr)
-{
-  std::cout << "saving\n";
-  ia = true;
-  online = _online;
-  port = _port;
-  addr = _addr;
 }
 
 bool	GameEngine::Restart_all()
@@ -117,38 +106,34 @@ bool	GameEngine::Restart_all()
   return false;
 }
 
-void	GameEngine::Connection()
+void	GameEngine::Connection(bool ia, bool online, const std::string &port, const std::string &addr)
 {
-  
-  if (online == 1)
+  if (online)
     {
-      std::cout << "bonjour toi !\n";
       if (connect_to_srv(port, addr) == "first")
 	{
-	  std::cout << "bonjour moi !\n";
 	  you = new Player(0, true);
 	  p2 = new Player(1, false);
+	  arbitre = new Arbitre(cases, you, p2);
 	}
       else
 	{
 	  you = new Player(1, false);
 	  p2 = new Player(0, true);
+	  arbitre = new Arbitre(cases, you, p2);
 	}
+    }
+  else if (ia)
+    {
+      you = new Player(0, true);
+      p_ia = new IA(1, false, 0);
+      arbitre = new Arbitre(cases, you, p_ia);
     }
   else
     {
-      if (ia == true)
-	{
-	  std::cout << "bonjour init_ia "<<std::endl;
-	  you = new Player(0, true);
-	  p_ia = new IA(1, false, 0);
-	  std::cout << "bonjour init_ia "<<std::endl;
-	}
-      else
-	{
-	  p1 = new Player(0, true);
-	  p2 = new Player(1, false);
-	}
+      p1 = new Player(0, true);
+      p2 = new Player(1, false);
+      arbitre = new Arbitre(cases, p1, p2);
     }
 }
 
@@ -183,6 +168,7 @@ void	GameEngine::display_plate()
 
 std::string	GameEngine::connect_to_srv(std::string const& port, std::string const& addr)
 {
+  std::string		toto;
   struct protoent       *proto;
   struct sockaddr_in    client;
   socklen_t             len;
@@ -201,7 +187,6 @@ std::string	GameEngine::connect_to_srv(std::string const& port, std::string cons
       std::cout << "fail to connect !\n";
       exit(0);
     }
-  std::string	toto;
   toto = xrecv(sock);
   std::cout << toto << std::endl;
   return toto;
@@ -252,7 +237,6 @@ void	GameEngine::add_pion_possible(int x, int y)
 bool	GameEngine::change_case(int x, int y, std::string const& color)
 {
   int	s;
-
   std::vector<std::pair<int, int > >::iterator	it_p = possible.begin();
 
   if (you == NULL && x >= -5 && x < 125 && y >= -45 && y < 0)
@@ -280,6 +264,7 @@ bool	GameEngine::change_case(int x, int y, std::string const& color)
       add_pion_possible(x - 1, y + 1);
       add_pion_possible(x - 1, y);
     }
+
   x > 19 ? x = 19 : x = x;
   x < 0 ? x = 0 : x = x;
   
@@ -288,7 +273,7 @@ bool	GameEngine::change_case(int x, int y, std::string const& color)
   
   s = x + (19 * y);
   if ((*(cases.begin() + s)).getColor() != "empty")
-      return false;
+    return false;
   if (color == "black")
     (*(cases.begin() + s)).setSprite(center_black, "black");
   else if (color == "white")
@@ -300,13 +285,15 @@ bool	GameEngine::play(int x, int y)
 {
   x -= 25;
   y -= 50;
-  if (p1->getTurn() == true && p1->change_case(x, y))
+  if (p1->getTurn() == true // && arbitre->double_three(x/50, y/50)
+      && p1->change_case(x, y))
     {  
       p1->setTurn(false);
       p2->setTurn(true);
       return arbitre->rules(p1, x, y);
     }
-  else if (p2->getTurn() == true && p2->change_case(x, y))
+  else if (p2->getTurn() == true // && arbitre->double_three(x/50, y/50)
+	   && p2->change_case(x, y))
     {
       p1->setTurn(true);
       p2->setTurn(false);
@@ -472,8 +459,6 @@ void	GameEngine::loop_IA()
 	play_with_ia(p_ia->getX(), p_ia->getY());
       else if (you->getTurn() == false && p_ia->getTurn() == false)
 	std::cout << "probleme \n";
-	
-//you->setTurn(true);
       window.clear();
       display_plate();
       window.display();      
@@ -512,7 +497,7 @@ std::vector<Case >	GameEngine::getCases() const
   return (this->cases);
 }
 
-sf::Texture const&		GameEngine::getCenterEmpty() const
+sf::Texture const&	GameEngine::getCenterEmpty() const
 {
   return (this->center_empty);
 }
@@ -520,4 +505,12 @@ sf::Texture const&		GameEngine::getCenterEmpty() const
 bool			GameEngine::getRulesPions() const
 {
   return (rules_pions);
+}
+
+void			GameEngine::setRules(bool rule_took, bool rule_five_b, bool rule_double_three, bool rule_possible)
+{
+  arbitre->setRules(rule_took, rule_five_b, rule_double_three);
+  rules_pions = rule_possible;
+  if (rules_pions == false)
+    possible.clear();
 }

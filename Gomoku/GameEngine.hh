@@ -5,7 +5,7 @@
 // Login   <aroy@epitech.net>
 // 
 // Started on  Thu Jun 19 18:54:46 2014 Antoine ROY
-// Last update Tue Aug 12 22:19:15 2014 Antoine ROY
+// Last update Wed Nov  5 23:42:28 2014 etienne bondot
 //
 
 #ifndef	__GAMEENGINE__
@@ -41,25 +41,22 @@ class	IA;
 
 class	GameEngine : public Singleton<GameEngine>
 {
+
 public:
+
   GameEngine();
   ~GameEngine();
 
 private:
+
   int			sock;
-
   sf::RenderWindow	window;
-
   sf::Event		event;
 
   std::vector<Case >	cases;
   std::vector<std::pair<int, int > >	possible;
 
-  int			online;
-  bool			ia;
   bool			rules_pions;
-  std::string		port;
-  std::string		addr;
 
   sf::Texture		font;
   sf::Sprite		s_font;
@@ -77,39 +74,37 @@ private:
   Player		*p1;
   Player		*p2;
   Player		*you;
-
   IA			*p_ia;
-
   Arbitre		*arbitre;
 
 public:
-  Arbitre		*getArbitre();
 
-  void	display_plate();
-  void	add_pion_possible(int, int);
-  bool	change_case(int, int, std::string const&);
-  void	affiche_winner();
-  void	xsend(int, std::string);
+  void		display_plate();
+  void		add_pion_possible(int, int);
+  bool		change_case(int, int, std::string const&);
+  void		affiche_winner();
+
+  void		xsend(int, std::string);
   std::string	xrecv(int);
   std::string	connect_to_srv(std::string const& port, std::string const& addr);
-  void		Connection();
-  void		Save_port_addr(int online = 1, std::string const& port = "6667", std::string const& addr = "127.0.0.1");
-  bool		Restart_all();
+  void		Connection(bool ia = false, bool online = false, const std::string &port = "", const std::string &addr = "");
 
-  bool	play_online_other_player(std::string msg);
-  bool	play_online(int, int);
-  
-  bool	play(int, int);
-  void	loop();
-  void	loop_online();
-  void	loop_IA();
-  bool	play_with_ia(int, int);
+  bool		Restart_all();
+  bool		play_online_other_player(std::string msg);
+  bool		play_online(int, int);
+  bool		play_with_ia(int, int);
+  bool		play(int, int);
+  void		loop();
+  void		loop_online();
+  void		loop_IA();
 
 public:
 
+  Arbitre		*getArbitre();
   std::vector<Case >	getCases() const;
   sf::Texture const&	getCenterEmpty() const;
   bool			getRulesPions() const;
+  void			setRules(bool, bool, bool, bool);
 
 };
 
